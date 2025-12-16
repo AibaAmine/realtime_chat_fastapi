@@ -10,14 +10,17 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8)
 
-    @field_validator("username")# the field_validator make sure the func is executed before acepting the username
-    #cls is the class itself (UserCreate)
+    @field_validator(
+        "username"
+    )  # the field_validator make sure the func is executed before acepting the username
+    # cls is the class itself (UserCreate)
     # v is the value being validated
     def username_alphanumeric(cls, v):
         if not re.match(r"^[a-zA-Z0-9_]+$", v):
             raise ValueError(
                 "username must be alphanumeric (letter, numbers, underscore)"
             )
+        return v
 
 
 class UserOut(BaseModel):
