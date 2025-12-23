@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from routers import auth
-from db_models import user
+from db_models import user,token
 from database import engine, Base
 
 Base.metadata.create_all(bind=engine)

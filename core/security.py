@@ -1,7 +1,6 @@
 from passlib.context import CryptContext
 
 from datetime import timedelta, datetime, timezone
-from typing import Optional
 import jwt  # this is pyjwt
 import os
 from dotenv import load_dotenv
@@ -37,6 +36,18 @@ def create_access_token(data: dict) -> str:
 
 def create_refresh_token(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+
+def decode_token(token: str):
+    try:
+        payload = jwt.decode(token,SECRET_KEY,algorithms=[ALGORITHM])
+        return payload
+    
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.PyJWTError:
+        return None #invalid token 

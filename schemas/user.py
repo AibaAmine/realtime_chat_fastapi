@@ -22,6 +22,14 @@ class UserCreate(BaseModel):
             )
         return v
 
+    @field_validator("password")
+    def password_strength(cls, v):
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("Must contain uppercase letter")
+        if not re.search(r"[0-9]", v):
+            raise ValueError("Must contain number")
+        return v
+
 
 class UserOut(BaseModel):
     id: UUID
@@ -33,3 +41,16 @@ class UserOut(BaseModel):
     class Config:
         # from_attributs = True means that we are allowing pydantic to convert orm models (db obj) to pydantic model
         from_attributes = True
+
+
+class PasswordChange(BaseModel):
+    old_password: str = Field(..., min_length=8)
+    new_password: str = Field(..., min_length=8)
+
+    @field_validator("new_password")
+    def password_strength(cls, v):
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("Must contain uppercase letter")
+        if not re.search(r"[0-9]", v):
+            raise ValueError("Must contain number")
+        return v
