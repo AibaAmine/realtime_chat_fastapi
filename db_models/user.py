@@ -2,7 +2,8 @@ import uuid
 from sqlalchemy import Column, String, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
-from database import Base
+from core.database import Base
+from sqlalchemy.orm import relationship
 
 
 class User(Base):
@@ -16,3 +17,12 @@ class User(Base):
 
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    profile = relationship(
+        "Profile", back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
+    tokens = relationship(
+        "RefreshToken", back_populates="user", cascade="all, delete-orphan"
+    )

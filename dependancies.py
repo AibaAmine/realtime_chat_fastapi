@@ -4,8 +4,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 import jwt
 from jwt.exceptions import PyJWTError
-from database import get_db
-from core.security import SECRET_KEY, ALGORITHM
+from core.database import get_db
 from db_models.user import User
 from core.security import decode_token
 
