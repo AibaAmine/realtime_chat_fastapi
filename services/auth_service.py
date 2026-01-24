@@ -47,8 +47,8 @@ class AuthService:
             db.add(new_user)
             db.commit()
             db.refresh(new_user)
-            
-             # Create empty profile automatically
+
+            # Create empty profile automatically
             new_profile = Profile(user_id=new_user.id)
             db.add(new_profile)
             db.commit()
@@ -111,6 +111,7 @@ class AuthService:
         }
 
     @staticmethod
+    #! add handling for db exceptions
     def refresh_tokens(db: Session, refresh_token: str) -> dict:
         # Decode and validate refresh token
         payload = decode_token(refresh_token)
@@ -135,8 +136,12 @@ class AuthService:
 
         # Check if token is expired
         if stored_token.expires_at < datetime.now(timezone.utc):
-            db.delete(stored_token)
-            db.commit()
+            try:
+                db.delete(stored_token)
+                db.commit()
+            except Exception:
+                db.rollback()
+                raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Refresh token expired you must login again",
@@ -155,9 +160,16 @@ class AuthService:
         new_db_token = RefreshToken(
             token=new_refresh_token, expires_at=expires_at, user_id=user_id
         )
-        db.add(new_db_token)
-        db.commit()
-        db.refresh(new_db_token)
+        try:
+            db.add(new_db_token)
+            db.commit()
+            db.refresh(new_db_token)
+        except Exception:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="error while creating new refresh token",
+            )
 
         # Create new access token linked to new refresh token
         new_access_token = create_access_token(
@@ -169,6 +181,7 @@ class AuthService:
             "refresh_token": new_refresh_token,  # Return NEW refresh token
             "token_type": "bearer",
         }
+
 
     @staticmethod
     def logout_user(db: Session, access_token: str) -> None:
@@ -184,7 +197,7 @@ class AuthService:
         # Find and Delete that SPECIFIC Session
         if refresh_token_id:
             stored_token = (
-                db.query(RefreshToken).filter(RefreshToken.id == int(refresh_token_id))
+                db.query(RefreshToken).filter(RefreshToken.id == refresh_token_id)
             ).first()
 
             if stored_token:
@@ -208,6 +221,7 @@ class AuthService:
         db.commit()
 
         # Logout all devices by deleting all refresh tokens
+        #check if this step is neccessary 
         db.query(RefreshToken).filter(RefreshToken.user_id == user.id).delete()
         db.commit()
 

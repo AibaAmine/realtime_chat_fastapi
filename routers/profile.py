@@ -32,7 +32,7 @@ def update_my_profile(
 @router.post("/me/avatar")
 def upload_avatar(
     file: Annotated[UploadFile, File()],
-    current_user: Annotated[User, Depends(get_current_user)] = None,
+    current_user: Annotated[User, Depends(get_current_user)],
     db: Session = Depends(get_db),
 ):
     """Upload profile avatar to Cloudinary"""

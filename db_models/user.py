@@ -20,6 +20,7 @@ class User(Base):
 
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+
     profile = relationship(
         "Profile", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )

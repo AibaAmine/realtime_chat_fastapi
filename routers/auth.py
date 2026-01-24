@@ -1,5 +1,5 @@
 from schemas.user import PasswordChange
-from fastapi import APIRouter, Body, Depends, HTTPException, status, Request, Header
+from fastapi import APIRouter, Body, Depends, status, Request
 from typing import Annotated
 from db_models.user import User
 from sqlalchemy.orm import Session
@@ -34,7 +34,7 @@ async def login_user(
     db: Session = Depends(get_db),
 ):
     return AuthService.authenticate_user(
-        db=db, email=form_data.username, password=form_data.password
+        db=db, email=form_data.username, password=form_data.password 
     )
 
 
