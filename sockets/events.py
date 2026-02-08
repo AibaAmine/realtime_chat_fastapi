@@ -23,3 +23,16 @@ async def on_leave_room(sid, data):
     await handle_leave_room(sid, data)
 
 
+@sio.on("send_message")
+async def on_send_message(sid, data):
+    await handle_send_message(sid, data)
+
+
+from sockets.handlers import handle_get_online_users
+
+
+@sio.on("get_online_users")
+async def on_get_online_users(sid, data):
+    await handle_get_online_users(sid, data)
+
+
