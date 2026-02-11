@@ -1,5 +1,14 @@
 from core.socket_manager import sio
-from sockets.handlers import handle_connect, handle_disconnect,handle_join_room,handle_leave_room,handle_send_message
+from sockets.handlers import (
+    handle_connect,
+    handle_disconnect,
+    handle_join_room,
+    handle_leave_room,
+    handle_send_message,
+    handle_get_online_users,
+    handle_typing_start,
+    handle_typing_stop,
+)
 
 
 # Map the event to the handler function
@@ -15,7 +24,7 @@ async def on_disconnect(sid):
 
 @sio.on("join_room")
 async def join_room(sid, data):
-    await handle_join_room(sid,data)
+    await handle_join_room(sid, data)
 
 
 @sio.on("leave_room")
@@ -28,11 +37,16 @@ async def on_send_message(sid, data):
     await handle_send_message(sid, data)
 
 
-from sockets.handlers import handle_get_online_users
-
-
 @sio.on("get_online_users")
 async def on_get_online_users(sid, data):
     await handle_get_online_users(sid, data)
 
 
+@sio.on("typing_start")
+async def on_typing_start(sid, data):
+    await handle_typing_start(sid, data)
+
+
+@sio.on("typing_stop")
+async def on_typing_stop(sid, data):
+    await handle_typing_stop(sid, data)

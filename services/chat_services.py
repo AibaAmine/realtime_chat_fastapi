@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from db_models.chat import Message, Room, RoomMember, RoomType
 from fastapi import HTTPException
 from uuid import UUID
-from typing import List
+from typing import List, Optional
 from sqlalchemy import select, and_, func, join, or_
 from db_models.user import User
 from datetime import datetime
@@ -378,3 +378,63 @@ class ChatService:
 
         db.delete(member)
         db.commit()
+
+    @staticmethod
+    def get_messages(
+        db: Session,
+        room_id: UUID,
+        user_id: UUID,
+        limit: int = 50,
+        before_id: Optional[UUID] = None,
+    ):
+        """
+        Get messages from a room with cursor-based pagination.
+
+        Args:
+            room_id: The room to fetch messages from
+            user_id: The requesting user (for membership validation)
+            limit: Number of messages to return (default 50, max 100)
+            before_id: Cursor - get messages before this message ID (for loading older messages)
+
+        Returns:
+            List of messages ordered by newest first
+        """
+        # Validate user is member of room
+        member = (
+            db.query(RoomMember)
+            .filter(RoomMember.room_id == room_id, RoomMember.user_id == user_id)
+            .first()
+        )
+        if not member:
+            raise HTTPException(404, "You are not a member of this room")
+
+        # Limit max page size
+        if limit > 100:
+            limit = 100
+
+        # Base query: get messages from room, ordered newest first
+        query = (
+            db.query(Message)
+            .filter(Message.room_id == room_id)
+            .order_by(Message.created_at.desc(), Message.id.desc())
+        )
+
+        # Apply cursor if provided (get messages before this ID)
+        if before_id:
+            cursor_message = db.query(Message).filter(Message.id == before_id).first()
+            if not cursor_message:
+                raise HTTPException(404, "Cursor message not found")
+
+            # Get messages created before the cursor message
+            query = query.filter(
+                or_(
+                    Message.created_at < cursor_message.created_at,
+                    and_(
+                        Message.created_at == cursor_message.created_at,
+                        Message.id < cursor_message.id,
+                    ),
+                )
+            )
+
+        messages = query.limit(limit).all()
+        return messages

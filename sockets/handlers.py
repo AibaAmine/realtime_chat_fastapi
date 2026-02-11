@@ -2,6 +2,13 @@ from urllib.parse import parse_qs
 from core.socket_manager import sio
 from core.security import decode_token
 from uuid import UUID
+from datetime import datetime
+from db_models.user import User
+from sockets.helpers import get_user_rooms, get_online_users_in_room
+from core.database import SessionLocal
+from db_models.chat import RoomMember, Message
+from sqlalchemy.exc import SQLAlchemyError
+from core.redis_manager import set_user_offline
 
 
 async def handle_connect(sid, environ, auth):
@@ -67,13 +74,9 @@ async def handle_disconnect(sid):
             return
 
         # Mark user offline in Redis
-        from core.redis_manager import set_user_offline
-
         await set_user_offline(user_id)
 
         #  Get all rooms user was member of
-        from sockets.helpers import get_user_rooms
-        from core.database import SessionLocal
 
         db = SessionLocal()
         try:
@@ -119,9 +122,6 @@ async def handle_join_room(sid, data):
             return
 
         # Validate membership
-        from core.database import SessionLocal
-        from db_models.chat import RoomMember
-        from sqlalchemy.exc import SQLAlchemyError
 
         db = SessionLocal()
         try:
@@ -137,12 +137,15 @@ async def handle_join_room(sid, data):
                 )
                 return
 
+            # Update last_read_at (mark as read)
+
+            member.last_read_at = datetime.utcnow()
+            db.commit()
+
             # Join the SocketIO room
             await sio.enter_room(sid, str(room_id))
 
             #  Get online users
-            from sockets.helpers import get_online_users_in_room
-
             online_users = await get_online_users_in_room(room_id, db)
 
             # Send confirmation
@@ -188,9 +191,6 @@ async def handle_leave_room(sid, data):
             return
 
         # Validate membership before leaving
-        from core.database import SessionLocal
-        from db_models.chat import RoomMember
-        from sqlalchemy.exc import SQLAlchemyError
 
         db = SessionLocal()
         try:
@@ -266,10 +266,6 @@ async def handle_send_message(sid, data):
             return
 
         # Database operations
-        from core.database import SessionLocal
-        from db_models.chat import RoomMember, Message
-        from sqlalchemy.exc import SQLAlchemyError
-        from datetime import datetime
 
         db = SessionLocal()
         try:
@@ -350,9 +346,6 @@ async def handle_get_online_users(sid, data):
             await sio.emit("error", {"message": "Invalid room_id format"}, to=sid)
             return
 
-        from core.database import SessionLocal
-        from sockets.helpers import get_online_users_in_room
-
         db = SessionLocal()
 
         online_users = await get_online_users_in_room(room_id, db)
@@ -366,6 +359,142 @@ async def handle_get_online_users(sid, data):
     except Exception as e:
         print(f"Error in get_online_users: {e}")
         await sio.emit("error", {"message": "Failed to get online users"}, to=sid)
+
+    finally:
+        if db:
+            db.close()
+
+
+async def handle_typing_start(sid, data):
+    """
+    Handle user starting to type.
+    Broadcasts typing indicator to other users in the room.
+    """
+    db = None
+    try:
+        session = await sio.get_session(sid)
+        user_id = session.get("user_id")
+
+        if not user_id:
+            await sio.emit("error", {"message": "Unauthorized"}, to=sid)
+            return
+
+        room_id = data.get("room_id")
+        if not room_id:
+            await sio.emit("error", {"message": "room_id is required"}, to=sid)
+            return
+
+        # Validate UUID format
+        try:
+            room_id = UUID(room_id)
+        except ValueError:
+            await sio.emit("error", {"message": "Invalid room_id format"}, to=sid)
+            return
+
+        db = SessionLocal()
+
+        # Validate user is member of room
+        member = (
+            db.query(RoomMember)
+            .filter(RoomMember.room_id == room_id, RoomMember.user_id == user_id)
+            .first()
+        )
+
+        if not member:
+            await sio.emit("error", {"message": "Not a member of this room"}, to=sid)
+            return
+
+        # Get user info for display
+        user = db.query(User).filter(User.id == user_id).first()
+
+        # Broadcast to room (excluding sender)
+        await sio.emit(
+            "user_typing",
+            {
+                "room_id": str(room_id),
+                "user_id": str(user_id),
+                "username": user.username if user else "Unknown",
+                "is_typing": True,
+            },
+            room=str(room_id),
+            skip_sid=sid,  # Don't send back to sender
+        )
+
+        print(f"User {user_id} started typing in room {room_id}")
+
+    except Exception as e:
+        print(f"Error in typing_start: {e}")
+        await sio.emit(
+            "error", {"message": "Failed to broadcast typing status"}, to=sid
+        )
+
+    finally:
+        if db:
+            db.close()
+
+
+async def handle_typing_stop(sid, data):
+    """
+    Handle user stopping typing.
+    Broadcasts typing stop indicator to other users in the room.
+    """
+    db = None
+    try:
+        session = await sio.get_session(sid)
+        user_id = session.get("user_id")
+
+        if not user_id:
+            await sio.emit("error", {"message": "Unauthorized"}, to=sid)
+            return
+
+        room_id = data.get("room_id")
+        if not room_id:
+            await sio.emit("error", {"message": "room_id is required"}, to=sid)
+            return
+
+        # Validate UUID format
+        try:
+            room_id = UUID(room_id)
+        except ValueError:
+            await sio.emit("error", {"message": "Invalid room_id format"}, to=sid)
+            return
+
+        db = SessionLocal()
+
+        # Validate user is member of room
+        member = (
+            db.query(RoomMember)
+            .filter(RoomMember.room_id == room_id, RoomMember.user_id == user_id)
+            .first()
+        )
+
+        if not member:
+            await sio.emit("error", {"message": "Not a member of this room"}, to=sid)
+            return
+
+        # Get user info for display
+        user = db.query(User).filter(User.id == user_id).first()
+
+        # Broadcast to room (excluding sender)
+        await sio.emit(
+            "user_typing",
+            {
+                "room_id": str(room_id),
+                "user_id": str(user_id),
+                "username": user.username if user else "Unknown",
+                "is_typing": False,
+            },
+            room=str(room_id),
+            skip_sid=sid,  # Don't send back to sender
+        )
+
+        print(f"User {user_id} stopped typing in room {room_id}")
+
+    except Exception as e:
+        print(f"Error in typing_stop: {e}")
+        await sio.emit(
+            "error", {"message": "Failed to broadcast typing status"}, to=sid
+        )
 
     finally:
         if db:

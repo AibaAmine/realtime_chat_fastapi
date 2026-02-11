@@ -3,7 +3,7 @@ from core.database import get_db
 from sqlalchemy.orm import Session
 from services.chat_services import ChatService
 from schemas.chat import RoomDetailOut, RoomCreate, MessageOut, MessageUpdate
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 from db_models.user import User
 from dependancies import get_current_user
 from schemas.chat import RoomListOut, RoomDetailOut
@@ -61,7 +61,7 @@ def create_room(
 @router.patch("/rooms/{room_id}", response_model=RoomDetailOut)
 def update_room(
     room_id: UUID,
-    room_data: Annotated[RoomUpdate,Body],
+    room_data: Annotated[RoomUpdate, Body],
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -76,10 +76,9 @@ def delete_room(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-  
+
     ChatService.delete_room(db, room_id, current_user.id)
     return {"message": "Room deleted successfully"}
-
 
 
 @router.get("/unread-count")
@@ -123,13 +122,34 @@ def add_member(
     ChatService.add_member(db, room_id, current_user.id, user_to_add_id)
 
 
-@router.delete("/rooms/{room_id}/members/{user_id}/delete", status_code=status.HTTP_200_OK)
+@router.delete(
+    "/rooms/{room_id}/members/{user_id}/delete", status_code=status.HTTP_200_OK
+)
 def remove_member(
     room_id: UUID,
     user_id: UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-   
+
     ChatService.remove_member(db, room_id, current_user.id, user_id)
     return {"message": "Member removed successfully"}
+
+
+@router.get("/rooms/{room_id}/messages", response_model=List[MessageOut])
+def get_room_messages(
+    room_id: UUID,
+    limit: int = Query(
+        default=50, ge=1, le=100, description="Number of messages to return"
+    ),
+    before_id: Optional[UUID] = Query(
+        default=None, description="Cursor: get messages before this ID"
+    ),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get message history with cursor-based pagination.
+    """
+    messages = ChatService.get_messages(db, room_id, current_user.id, limit, before_id)
+    return [MessageOut.model_validate(msg) for msg in messages]
