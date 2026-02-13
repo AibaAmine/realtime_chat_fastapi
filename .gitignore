@@ -1,6 +1,7 @@
 __pycache__/
 venv/
 .env
+.env.render
 sockets/test_websocket.py
 
 DEPLOYMENT.md

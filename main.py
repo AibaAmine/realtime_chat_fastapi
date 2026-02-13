@@ -11,7 +11,19 @@ settings = get_settings()
 Base.metadata.create_all(bind=engine)
 
 
-app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION)
+app = FastAPI(
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description="""
+## Realtime Chat API
+
+REST API endpoints documented below.
+
+**WebSocket API:** [View WebSocket Documentation](https://github.com/AibaAmine/realtime_chat_fastapi/blob/main/WEBSOCKET_API.md)
+
+---
+    """,
+)
 
 # CORS Configuration for production
 app.add_middleware(
