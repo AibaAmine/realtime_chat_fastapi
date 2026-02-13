@@ -1,11 +1,15 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+from typing import List
 
 
 class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str
+
+    # Redis
+    REDIS_URL: str 
 
     # Security
     SECRET_KEY: str
@@ -22,6 +26,9 @@ class Settings(BaseSettings):
     APP_NAME: str = "Realtime Chat API"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
+
+    # CORS - comma-separated origins in .env
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
 
     class Config:
         env_file = ".env"

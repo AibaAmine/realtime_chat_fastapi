@@ -2,3 +2,7 @@ __pycache__/
 venv/
 .env
 sockets/test_websocket.py
+
+DEPLOYMENT.md
+FRONTEND_DOCS.md
+LOCAL_DEVELOPMENT.md

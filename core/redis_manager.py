@@ -1,7 +1,11 @@
 import redis
 import json
+from core.config import get_settings
 
-redis_client = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
+settings = get_settings()
+
+# Use Redis URL from environment for production (Upstash)
+redis_client = redis.from_url(settings.REDIS_URL, decode_responses=True)
 
 
 async def set_user_online(user_id: str, ttl: int = 3600):

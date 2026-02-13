@@ -1,13 +1,16 @@
 import socketio
+from core.config import get_settings
 
+settings = get_settings()
 
-mgr = socketio.AsyncRedisManager("redis://localhost:6379/0")
+# Use Redis URL from environment for production (Upstash)
+mgr = socketio.AsyncRedisManager(settings.REDIS_URL)
+
 # create the async socketio server
-
 sio = socketio.AsyncServer(
     async_mode="asgi",
     client_manager=mgr,
-    cors_allowed_origins="*",  # allow the frontend to connect from any port
+    cors_allowed_origins=settings.ALLOWED_ORIGINS,  # Production CORS
     logger=True,  #  Enable logs
     engineio_logger=True,  #  Enable low-level logs
 )
