@@ -2,7 +2,17 @@ __pycache__/
 venv/
 .env
 .env.render
+.mypy_cache/
+.vscode/
 sockets/test_websocket.py
+tempCodeRunnerFile.py
+
+# Claude Code tooling (user-specific, not for public repo)
+.claude/
+CLAUDE.md
+LEARNING_GUIDE.md
+PROJECT_AUDIT.md
+frontend_build_plan.md
 
 DEPLOYMENT.md
 FRONTEND_DOCS.md
