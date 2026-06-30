@@ -56,7 +56,7 @@ async def logout_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    AuthService.logout_user(db=db, access_token=token)
+    await AuthService.logout_user(db=db, access_token=token)
     return None
 
 

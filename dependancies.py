@@ -7,6 +7,7 @@ from jwt.exceptions import PyJWTError
 from core.database import get_db
 from db_models.user import User
 from core.security import decode_token
+from core.redis_manager import is_token_blocklisted
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -35,8 +36,15 @@ async def get_current_user(
     if token_type != "access":
         raise credentials_exception
 
+    jti: str = payload.get("jti")
+    if await is_token_blocklisted(jti):
+        raise credentials_exception
+
     user = db.query(User).filter(User.id == user_id).first()
     if user is None:
+        raise credentials_exception
+
+    if not user.is_active:
         raise credentials_exception
 
     return user

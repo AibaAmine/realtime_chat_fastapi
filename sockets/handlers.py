@@ -1,4 +1,3 @@
-from urllib.parse import parse_qs
 from core.socket_manager import sio
 from core.security import decode_token
 from uuid import UUID
@@ -12,15 +11,9 @@ from core.redis_manager import set_user_offline
 
 
 async def handle_connect(sid, environ, auth):
-    # Extract Token (Auth dict or Query Param)
-    token = None
-    if auth and "token" in auth:
-        token = auth["token"]
-    else:
-        query_string = environ.get("QUERY_STRING", "")
-        params = parse_qs(query_string)
-        if "token" in params:
-            token = params["token"][0]
+    # Extract Token — only from the auth payload, never the query string
+    # (query params leak into server/proxy access logs and browser history)
+    token = auth.get("token") if auth else None
 
     if not token:
         return False

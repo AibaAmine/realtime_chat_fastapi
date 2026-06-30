@@ -26,3 +26,19 @@ async def is_user_online(user_id: str) -> bool:
     """Check if user is online"""
     key = f"user:{user_id}:status"
     return redis_client.exists(key) > 0
+
+
+async def blocklist_token(jti: str, ttl_seconds: int):
+    """Blocklist an access token's jti until it would have expired anyway"""
+    if ttl_seconds <= 0:
+        return
+    key = f"blocklist:{jti}"
+    redis_client.setex(key, ttl_seconds, "1")
+
+
+async def is_token_blocklisted(jti: str) -> bool:
+    """Check if an access token's jti has been revoked (e.g. via logout)"""
+    if not jti:
+        return False
+    key = f"blocklist:{jti}"
+    return redis_client.exists(key) > 0

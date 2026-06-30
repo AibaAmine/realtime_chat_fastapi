@@ -12,6 +12,7 @@ from core.security import (
     create_refresh_token,
     decode_token,
 )
+from core.redis_manager import blocklist_token
 from core.config import get_settings
 
 settings = get_settings()
@@ -184,7 +185,7 @@ class AuthService:
 
 
     @staticmethod
-    def logout_user(db: Session, access_token: str) -> None:
+    async def logout_user(db: Session, access_token: str) -> None:
         # Decode access token to get refresh token ID
         payload = decode_token(access_token)
         if not payload:
@@ -207,6 +208,13 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token format"
             )
+
+        # Blocklist the access token itself so it can't be reused before it expires
+        jti = payload.get("jti")
+        exp = payload.get("exp")
+        if jti and exp:
+            ttl_seconds = exp - int(datetime.now(timezone.utc).timestamp())
+            await blocklist_token(jti, ttl_seconds)
 
     @staticmethod
     def change_user_password(
