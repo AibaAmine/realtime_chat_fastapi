@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 from db_models.chat import Message, Room, RoomMember, RoomType
 from fastapi import HTTPException
 from uuid import UUID
@@ -51,16 +51,15 @@ class ChatService:
         """
         Get all rooms for a user, sorted by most recent message activity.
         """
-        # Subquery: Get the latest message timestamp for each room
+        # Latest message per room (Postgres DISTINCT ON), aliased so it can
+        # be joined against like a normal Message entity.
         latest_message_subquery = (
-            select(
-                Message.room_id, func.max(Message.created_at).label("last_message_time")
-            )
-            .group_by(Message.room_id)
+            db.query(Message)
+            .distinct(Message.room_id)
+            .order_by(Message.room_id, Message.created_at.desc())
             .subquery()
         )
-
-        unread_count_subquery = select(RoomMember.room_id)
+        LatestMessage = aliased(Message, latest_message_subquery)
 
         unread_count_subquery = (
             select(Message.room_id, func.count(Message.id).label("unread_count"))
@@ -78,63 +77,29 @@ class ChatService:
             .subquery()  # Turn this into a subquery (a temporary table) that I can join with the main query.
         )
 
-        # Main query: Get rooms with latest message time for sorting
+        # Single query: rooms + unread counts + last message preview, sorted by activity
         rooms = (
             db.query(
                 Room,
                 func.coalesce(unread_count_subquery.c.unread_count, 0).label(
                     "unread_count"
                 ),  # if room = NULL (room  has no unread messages), convert it to 0
+                LatestMessage,
             )
             .join(RoomMember, Room.id == RoomMember.room_id)
-            .outerjoin(
-                latest_message_subquery, Room.id == latest_message_subquery.c.room_id
-            )
+            .outerjoin(LatestMessage, Room.id == LatestMessage.room_id)
             .outerjoin(
                 unread_count_subquery, Room.id == unread_count_subquery.c.room_id
             )
             .filter(RoomMember.user_id == user_id, Room.is_active == True)
-            .order_by(latest_message_subquery.c.last_message_time.desc().nullslast())
+            .order_by(LatestMessage.created_at.desc().nullslast())
             .all()
         )
 
-        # get latest messsages for all rooms for previews
-
-        # we could just get the msg for each room but to avoid N+1 problem we do :
-
-        room_ids = [room.id for room, _ in rooms]
-        # get the timestamp of the latest msg for each room (first db access)
-        max_created_subquery = (
-            db.query(
-                Message.room_id, func.max(Message.created_at).label("max_created_at")
-            )
-            .filter(Message.room_id.in_(room_ids))
-            .group_by(Message.room_id)
-            .subquery()
-        )
-
-        # get the full message objs that match the past timestamps (secong db access)
-
-        latest_messages_list = (
-            db.query(Message)
-            .join(
-                max_created_subquery,
-                (Message.room_id == max_created_subquery.c.room_id)
-                & (Message.created_at == max_created_subquery.c.max_created_at),
-            )
-            .all()
-        )
-
-        # convert to dict
-        latest_messages = {msg.room_id: msg for msg in latest_messages_list}
-
-        # Attach the data to room objects
         result = []
-        for room, unread_count in rooms:
+        for room, unread_count, last_message in rooms:
             room.unread_count = unread_count
-            room.last_message = latest_messages.get(
-                room.id
-            )  # Get the message for THIS room
+            room.last_message = last_message
             result.append(room)
 
         return result
