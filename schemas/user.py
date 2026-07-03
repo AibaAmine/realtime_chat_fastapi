@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from uuid import UUID
 from datetime import datetime
+from typing import Optional
 import re
 
 
@@ -35,6 +36,7 @@ class UserOut(BaseModel):
     id: UUID
     username: str
     email: EmailStr
+    avatar_url: Optional[str] = None
     created_at: datetime
     is_active: bool
 

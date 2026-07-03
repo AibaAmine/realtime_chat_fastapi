@@ -7,11 +7,13 @@ import {
   type ReactNode,
 } from "react";
 import { api, setAccessToken } from "../lib/api";
+import type { UserSummary } from "../types/chat";
 
 type AuthStatus = "loading" | "authed" | "anon";
 
 interface AuthContextValue {
   status: AuthStatus;
+  user: UserSummary | null;
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -21,6 +23,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
+  const [user, setUser] = useState<UserSummary | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,7 +31,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data } = await api.post<{ access_token: string }>("/auth/refresh");
         setAccessToken(data.access_token);
-        if (!cancelled) setStatus("authed");
+        const me = await api.get<UserSummary>("/auth/me");
+        if (!cancelled) {
+          setUser(me.data);
+          setStatus("authed");
+        }
       } catch {
         if (!cancelled) setStatus("anon");
       }
@@ -46,6 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
     });
     setAccessToken(data.access_token);
+    const me = await api.get<UserSummary>("/auth/me");
+    setUser(me.data);
     setStatus("authed");
   }, []);
 
@@ -62,12 +71,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await api.post("/auth/logout");
     } finally {
       setAccessToken(null);
+      setUser(null);
       setStatus("anon");
     }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ status, login, register, logout }}>
+    <AuthContext.Provider value={{ status, user, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

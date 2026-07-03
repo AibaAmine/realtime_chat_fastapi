@@ -27,3 +27,7 @@ class User(Base):
     tokens = relationship(
         "RefreshToken", back_populates="user", cascade="all, delete-orphan"
     )
+
+    @property
+    def avatar_url(self) -> str | None:
+        return self.profile.avatar_url if self.profile else None

@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy.orm import Session, aliased, joinedload
 from db_models.chat import Message, Room, RoomMember, RoomType
 from fastapi import HTTPException
 from uuid import UUID
@@ -36,6 +36,11 @@ class ChatService:
         room = (
             db.query(Room)
             .join(RoomMember, Room.id == RoomMember.room_id)
+            .options(
+                joinedload(Room.members)
+                .joinedload(RoomMember.user)
+                .joinedload(User.profile)
+            )
             .filter(Room.id == room_id, RoomMember.user_id == user_id)
             .first()
         )
@@ -60,6 +65,8 @@ class ChatService:
             .subquery()
         )
         LatestMessage = aliased(Message, latest_message_subquery)
+        # loader options on a subquery-derived alias must be applied to the outer
+        # query (see below), options on the inner query are discarded by .subquery()
 
         unread_count_subquery = (
             select(Message.room_id, func.count(Message.id).label("unread_count"))
@@ -90,6 +97,9 @@ class ChatService:
             .outerjoin(LatestMessage, Room.id == LatestMessage.room_id)
             .outerjoin(
                 unread_count_subquery, Room.id == unread_count_subquery.c.room_id
+            )
+            .options(
+                joinedload(LatestMessage.sender).joinedload(User.profile)
             )
             .filter(RoomMember.user_id == user_id, Room.is_active == True)
             .order_by(LatestMessage.created_at.desc().nullslast())
@@ -245,7 +255,12 @@ class ChatService:
     @staticmethod
     def edit_message(db: Session, message_id: UUID, user_id: UUID, new_content: str):
 
-        message = db.query(Message).filter(Message.id == message_id).first()
+        message = (
+            db.query(Message)
+            .options(joinedload(Message.sender).joinedload(User.profile))
+            .filter(Message.id == message_id)
+            .first()
+        )
 
         if not message:
             raise HTTPException(404, "Message not found")
@@ -380,6 +395,7 @@ class ChatService:
         # Base query: get messages from room, ordered newest first
         query = (
             db.query(Message)
+            .options(joinedload(Message.sender).joinedload(User.profile))
             .filter(Message.room_id == room_id)
             .order_by(Message.created_at.desc(), Message.id.desc())
         )

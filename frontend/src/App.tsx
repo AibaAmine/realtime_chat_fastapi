@@ -1,9 +1,11 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { SocketProvider } from "./context/SocketContext";
+import { ChatProvider } from "./context/ChatContext";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Home from "./pages/Home";
+import MainChatPage from "./pages/MainChatPage";
 
 function App() {
   return (
@@ -16,7 +18,11 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Home />
+                <SocketProvider>
+                  <ChatProvider>
+                    <MainChatPage />
+                  </ChatProvider>
+                </SocketProvider>
               </ProtectedRoute>
             }
           />

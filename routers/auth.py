@@ -73,6 +73,11 @@ async def logout_user(
     return None
 
 
+@router.get("/me", response_model=UserOut)
+async def get_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
 @router.post("/change-password")
 @limiter.limit("5/minute")
 async def change_password(
