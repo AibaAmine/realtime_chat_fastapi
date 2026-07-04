@@ -45,6 +45,15 @@ class UserOut(BaseModel):
         from_attributes = True
 
 
+class UserSearchOut(BaseModel):
+    id: UUID
+    username: str
+    avatar_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 class PasswordChange(BaseModel):
     old_password: str = Field(..., min_length=8)
     new_password: str = Field(..., min_length=8)
