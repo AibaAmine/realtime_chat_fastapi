@@ -183,7 +183,6 @@ class AuthService:
             "token_type": "bearer",
         }
 
-
     @staticmethod
     async def logout_user(db: Session, access_token: str) -> None:
         # Decode access token to get refresh token ID
@@ -229,8 +228,25 @@ class AuthService:
         db.commit()
 
         # Logout all devices by deleting all refresh tokens
-        #check if this step is neccessary 
+        # check if this step is neccessary
         db.query(RefreshToken).filter(RefreshToken.user_id == user.id).delete()
         db.commit()
 
         return {"message": "Password updated"}
+
+    @staticmethod
+    def get_users(
+        db: Session,
+        user: User,
+        limit: int = 50,
+    ):
+        if limit > 100:
+            limit = 100
+
+        query = db.query(User)
+        
+        
+        users = query.limit(limit).all()
+        
+        return users
+        

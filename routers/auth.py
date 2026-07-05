@@ -92,3 +92,14 @@ async def change_password(
         old_password=passwords.old_password,
         new_password=passwords.new_password,
     )
+
+
+
+
+@router.get("/users")
+async def get_users(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return 

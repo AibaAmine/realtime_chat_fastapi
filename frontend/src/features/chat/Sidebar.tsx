@@ -1,10 +1,11 @@
-import { useEffect } from "react";
-import { LogOut, MessageSquare, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { LogOut, MessageSquare, Plus, Search } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useChat } from "../../context/ChatContext";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { Badge } from "../../components/ui/Badge";
 import { RoomList } from "./RoomList";
+import { NewChatModal } from "./NewChatModal";
 
 interface SidebarProps {
   onSelectRoom: () => void;
@@ -13,6 +14,7 @@ interface SidebarProps {
 export function Sidebar({ onSelectRoom }: SidebarProps) {
   const { rooms, roomsLoaded } = useChat();
   const { logout } = useAuth();
+  const [showNewChat, setShowNewChat] = useState(false);
 
   const globalUnread = rooms.reduce((sum, r) => sum + r.unread_count, 0);
 
@@ -28,6 +30,14 @@ export function Sidebar({ onSelectRoom }: SidebarProps) {
         <Badge count={globalUnread} />
         <button
           type="button"
+          onClick={() => setShowNewChat(true)}
+          aria-label="New chat"
+          className="text-text-muted hover:text-text-primary"
+        >
+          <Plus size={18} />
+        </button>
+        <button
+          type="button"
           onClick={() => void logout()}
           aria-label="Log out"
           className="text-text-muted hover:text-text-primary"
@@ -35,6 +45,8 @@ export function Sidebar({ onSelectRoom }: SidebarProps) {
           <LogOut size={18} />
         </button>
       </div>
+
+      {showNewChat && <NewChatModal onClose={() => setShowNewChat(false)} />}
 
       <div className="px-4 pb-3">
         <div className="relative">

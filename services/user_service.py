@@ -7,7 +7,7 @@ from typing import List
 class UserService:
 
     @staticmethod
-    def search_users(db: Session, query: str, current_user_id: UUID, limit: int = 20) -> List[User]:
+    def search_users(db: Session, query: str, current_user_id: UUID, limit: int = 25) -> List[User]:
         return (
             db.query(User)
             .options(joinedload(User.profile))

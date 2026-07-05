@@ -292,6 +292,7 @@ interface ChatContextValue extends ChatState {
   deleteMessage: (messageId: string) => Promise<void>;
   setTyping: (isTyping: boolean) => void;
   refreshRooms: () => Promise<void>;
+  refreshActiveRoomDetail: () => Promise<void>;
 }
 
 const ChatContext = createContext<ChatContextValue | undefined>(undefined);
@@ -585,6 +586,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "MESSAGE_DELETED", roomId, messageId });
   }, []);
 
+  const refreshActiveRoomDetail = useCallback(async () => {
+    const roomId = stateRef.current.activeRoomId;
+    if (!roomId) return;
+    const detail = await chatApi.getRoomDetail(roomId);
+    dispatch({ type: "ROOM_DETAIL_LOADED", roomId, detail });
+  }, []);
+
   const setTyping = useCallback(
     (isTyping: boolean) => {
       const roomId = stateRef.current.activeRoomId;
@@ -606,6 +614,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         deleteMessage,
         setTyping,
         refreshRooms,
+        refreshActiveRoomDetail,
       }}
     >
       {children}

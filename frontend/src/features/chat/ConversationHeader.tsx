@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { ChevronLeft, Users } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useChat } from "../../context/ChatContext";
 import { Avatar } from "../../components/ui/Avatar";
+import { ManageGroupModal } from "./ManageGroupModal";
 
 interface ConversationHeaderProps {
   membersOpen: boolean;
@@ -12,6 +14,7 @@ interface ConversationHeaderProps {
 export function ConversationHeader({ membersOpen, onToggleMembers, onBack }: ConversationHeaderProps) {
   const { user } = useAuth();
   const { activeRoomDetail, onlineUserIds } = useChat();
+  const [showManageGroup, setShowManageGroup] = useState(false);
 
   if (!activeRoomDetail) return null;
 
@@ -31,7 +34,17 @@ export function ConversationHeader({ membersOpen, onToggleMembers, onBack }: Con
       {!isGroup && partner && <Avatar src={partner.avatar_url} alt={partner.username} size={32} />}
 
       <div className="flex flex-col">
-        <span className="text-lg font-semibold text-text-primary">{title}</span>
+        {isGroup ? (
+          <button
+            type="button"
+            onClick={() => setShowManageGroup(true)}
+            className="text-left text-lg font-semibold text-text-primary hover:underline"
+          >
+            {title}
+          </button>
+        ) : (
+          <span className="text-lg font-semibold text-text-primary">{title}</span>
+        )}
         {!isGroup && (
           <span className="flex items-center gap-1.5 text-xs text-text-muted">
             <span className={`h-1.5 w-1.5 rounded-full ${partnerOnline ? "bg-success" : "bg-text-muted"}`} />
@@ -55,6 +68,8 @@ export function ConversationHeader({ membersOpen, onToggleMembers, onBack }: Con
           {activeRoomDetail.members.length} members
         </button>
       )}
+
+      {showManageGroup && <ManageGroupModal onClose={() => setShowManageGroup(false)} />}
     </div>
   );
 }

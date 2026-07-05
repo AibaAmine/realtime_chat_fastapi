@@ -1,5 +1,11 @@
 import { api } from "./api";
-import type { Message, RoomDetail, RoomSummary, RoomType } from "../types/chat";
+import type {
+  Message,
+  RoomDetail,
+  RoomSummary,
+  RoomType,
+  UserSearchResult,
+} from "../types/chat";
 
 export async function getRooms(): Promise<RoomSummary[]> {
   const { data } = await api.get<RoomSummary[]>("/chat/rooms");
@@ -57,4 +63,22 @@ export async function addRoomMember(roomId: string, userToAddId: string): Promis
 
 export async function removeRoomMember(roomId: string, userId: string): Promise<void> {
   await api.delete(`/chat/rooms/${roomId}/members/${userId}/delete`);
+}
+
+export async function leaveRoom(roomId: string): Promise<void> {
+  await api.delete(`/chat/rooms/${roomId}/leave`);
+}
+
+export async function updateRoom(roomId: string, name: string): Promise<RoomDetail> {
+  const { data } = await api.patch<RoomDetail>(`/chat/rooms/${roomId}`, { name });
+  return data;
+}
+
+export async function deleteRoom(roomId: string): Promise<void> {
+  await api.delete(`/chat/rooms/${roomId}`);
+}
+
+export async function searchUsers(query: string): Promise<UserSearchResult[]> {
+  const { data } = await api.get<UserSearchResult[]>("/users", { params: { q: query } });
+  return data;
 }

@@ -115,8 +115,8 @@ class ChatService:
         return result
 
     @staticmethod
-    # if the room is dm and the room allready exist it will return it
-    def create_room(
+    # if type is DM and a room already exists between the two users, returns it instead of creating a new one
+    def get_or_create_room(
         db: Session,
         user_id: UUID,
         type: str = None,
@@ -355,6 +355,32 @@ class ChatService:
 
         if not member:
             raise HTTPException(404, "User is not a member of this room")
+
+        db.delete(member)
+        db.commit()
+
+    @staticmethod
+    def leave_room(db: Session, room_id: UUID, user_id: UUID):
+
+        room = db.query(Room).filter(Room.id == room_id).first()
+
+        if not room:
+            raise HTTPException(404, "Room not found")
+
+        if room.type != RoomType.GROUP:
+            raise HTTPException(400, "Can only leave group rooms")
+
+        if user_id == room.creator_id:
+            raise HTTPException(400, "Room creator cannot leave; delete the room instead")
+
+        member = (
+            db.query(RoomMember)
+            .filter(RoomMember.room_id == room_id, RoomMember.user_id == user_id)
+            .first()
+        )
+
+        if not member:
+            raise HTTPException(404, "You are not a member of this room")
 
         db.delete(member)
         db.commit()

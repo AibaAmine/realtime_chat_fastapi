@@ -7,10 +7,15 @@ settings = get_settings()
 mgr = socketio.AsyncRedisManager(settings.REDIS_URL)
 
 # create the async socketio server
+# cors_allowed_origins=[] disables Engine.IO's own CORS header injection —
+# FastAPI's CORSMiddleware (main.py) already wraps this mounted sub-app, and
+# having both add Access-Control-Allow-Origin produces duplicate header
+# values, which browsers (unlike curl/non-browser socket.io clients) reject
+# outright, breaking every real-browser socket connection.
 sio = socketio.AsyncServer(
     async_mode="asgi",
     client_manager=mgr,
-    cors_allowed_origins=settings.ALLOWED_ORIGINS,  # Production CORS
+    cors_allowed_origins=[],
     logger=True,  #  Enable logs
     engineio_logger=True,  #  Enable low-level logs
 )

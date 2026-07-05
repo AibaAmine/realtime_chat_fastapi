@@ -40,6 +40,7 @@ def get_my_rooms(
     return [RoomListOut.model_validate(room) for room in rooms]
 
 
+
 @router.post(
     "/rooms/create", response_model=RoomDetailOut, status_code=status.HTTP_200_OK
 )
@@ -48,7 +49,7 @@ def create_room(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    room = ChatService.create_room(
+    room = ChatService.get_or_create_room(
         db=db,
         user_id=current_user.id,
         type=room_data.type,
@@ -56,6 +57,8 @@ def create_room(
         participant_ids=room_data.member_ids,
     )
     return RoomDetailOut.model_validate(room)
+
+
 
 
 @router.patch("/rooms/{room_id}", response_model=RoomDetailOut)
@@ -134,6 +137,16 @@ def remove_member(
 
     ChatService.remove_member(db, room_id, current_user.id, user_id)
     return {"message": "Member removed successfully"}
+
+
+@router.delete("/rooms/{room_id}/leave", status_code=status.HTTP_200_OK)
+def leave_room(
+    room_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ChatService.leave_room(db, room_id, current_user.id)
+    return {"message": "Left group successfully"}
 
 
 @router.get("/rooms/{room_id}/messages", response_model=List[MessageOut])

@@ -9,6 +9,13 @@ export interface UserSummary {
 }
 
 export type RoomType = "dm" | "group";
+
+// Mirrors schemas/user.py::UserSearchOut (GET /users?q=)
+export interface UserSearchResult {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+}
 export type MessageType = "text" | "image" | "file";
 
 // Mirrors schemas/chat.py::MessageOut (REST shape)
