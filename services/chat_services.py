@@ -41,7 +41,7 @@ class ChatService:
                 .joinedload(RoomMember.user)
                 .joinedload(User.profile)
             )
-            .filter(Room.id == room_id, RoomMember.user_id == user_id)
+            .filter(Room.id == room_id, RoomMember.user_id == user_id, Room.is_active == True)
             .first()
         )
 
@@ -238,7 +238,7 @@ class ChatService:
 
         count = (
             db.query(func.count(Message.id))
-            .join(RoomMember, Message, RoomMember.room_id == Message.room_id)
+            .join(RoomMember, RoomMember.room_id == Message.room_id)
             .filter(
                 RoomMember.user_id == user_id,
                 or_(
@@ -413,6 +413,10 @@ class ChatService:
         )
         if not member:
             raise HTTPException(404, "You are not a member of this room")
+
+        room = db.query(Room).filter(Room.id == room_id, Room.is_active == True).first()
+        if not room:
+            raise HTTPException(404, "Room not found")
 
         # Limit max page size
         if limit > 100:

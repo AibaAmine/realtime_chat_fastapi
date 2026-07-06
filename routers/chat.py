@@ -30,7 +30,7 @@ def get_room_detail(
 ):
     room = ChatService.get_room_by_id(db, room_id, current_user.id)
     return RoomDetailOut.model_validate(room)
-
+  
 
 @router.get("/rooms", response_model=List[RoomListOut])
 def get_my_rooms(
@@ -123,6 +123,7 @@ def add_member(
     db: Session = Depends(get_db),
 ):
     ChatService.add_member(db, room_id, current_user.id, user_to_add_id)
+    return {"message": "Member added successfully"}
 
 
 @router.delete(
