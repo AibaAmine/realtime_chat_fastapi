@@ -19,6 +19,7 @@ class Profile(Base):
 
     bio = Column(Text, nullable=True)
     avatar_url = Column(String, nullable=True)
+    status = Column(String(40), nullable=True)
     phone_number = Column(String(20), nullable=True)
     date_of_birth = Column(DateTime, nullable=True)
     location = Column(String(100), nullable=True)

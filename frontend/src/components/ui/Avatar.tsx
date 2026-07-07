@@ -1,5 +1,5 @@
 type PresenceStatus = "online" | "away" | "offline";
-type AvatarSize = 24 | 32 | 40 | 48;
+type AvatarSize = 24 | 32 | 40 | 48 | 96;
 
 interface AvatarProps {
   src?: string | null;

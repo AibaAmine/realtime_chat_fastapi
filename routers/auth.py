@@ -82,16 +82,19 @@ async def get_me(current_user: User = Depends(get_current_user)):
 @limiter.limit("5/minute")
 async def change_password(
     request: Request,
+    response: Response,
     passwords: Annotated[PasswordChange, Body()],
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return AuthService.change_user_password(
+    result = AuthService.change_user_password(
         db=db,
         user=current_user,
         old_password=passwords.old_password,
         new_password=passwords.new_password,
     )
+    clear_refresh_cookie(response)
+    return result
 
 
 

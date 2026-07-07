@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { LogOut, MessageSquare, Plus, Search } from "lucide-react";
+import { LogOut, MessageSquare, Plus, Search, User } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useChat } from "../../context/ChatContext";
 import { EmptyState } from "../../components/ui/EmptyState";
@@ -36,6 +37,9 @@ export function Sidebar({ onSelectRoom }: SidebarProps) {
         >
           <Plus size={18} />
         </button>
+        <Link to="/profile" aria-label="Your profile" className="text-text-muted hover:text-text-primary">
+          <User size={18} />
+        </Link>
         <button
           type="button"
           onClick={() => void logout()}

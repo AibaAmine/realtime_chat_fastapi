@@ -4,6 +4,7 @@ from db_models import chat
 from routers import auth, profile, chat, users
 from core.database import engine, Base
 from core.config import get_settings
+import core.cloudinary_config  # noqa: F401 — configures the cloudinary SDK on import
 from core.socket_manager import sio, sio_app
 from sockets import events  # Register events
 

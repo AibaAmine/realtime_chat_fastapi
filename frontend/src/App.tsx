@@ -6,6 +6,7 @@ import { ProtectedRoute } from "./routes/ProtectedRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MainChatPage from "./pages/MainChatPage";
+import ProfilePage from "./pages/ProfilePage";
 
 function App() {
   return (
@@ -23,6 +24,14 @@ function App() {
                     <MainChatPage />
                   </ChatProvider>
                 </SocketProvider>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             }
           />
