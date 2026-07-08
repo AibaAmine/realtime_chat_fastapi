@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -16,6 +17,7 @@ from core.redis_manager import blocklist_token
 from core.config import get_settings
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 class AuthService:
@@ -70,11 +72,14 @@ class AuthService:
             or not user.is_active
             or not verify_password(password, user.hashed_password)
         ):
+            logger.warning("Failed login attempt for email=%s", email)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password",
                 headers={"WWW-Authenticate": "Bearer"},
             )
+
+        logger.info("User %s logged in", user.id)
 
         refresh_token = create_refresh_token(data={"sub": str(user.id)})
 

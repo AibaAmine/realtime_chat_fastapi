@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, status, UploadFile, File
 from sqlalchemy.orm import Session
 from dependancies import get_current_user
 from schemas.profile import ProfileResponse, ProfileUpdate
@@ -45,14 +45,4 @@ def delete_avatar(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Session = Depends(get_db),
 ):
-    try:
-        profile = ProfileService.get_user_profile(db=db, user=current_user)
-        profile.avatar_url = None
-        db.commit()
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="could not delete the avatar ",
-        )
+    ProfileService.delete_avatar(db=db, user=current_user)

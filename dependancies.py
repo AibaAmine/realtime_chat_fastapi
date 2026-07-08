@@ -2,8 +2,6 @@ from fastapi import Depends, HTTPException, status
 from typing import Annotated
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-import jwt
-from jwt.exceptions import PyJWTError
 from core.database import get_db
 from db_models.user import User
 from core.security import decode_token
@@ -25,7 +23,7 @@ async def get_current_user(
     payload = decode_token(token=token)
 
     if payload is None:
-        raise PyJWTError
+        raise credentials_exception
 
     user_id: str = payload.get("sub")
     token_type: str = payload.get("type")

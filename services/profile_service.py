@@ -1,9 +1,12 @@
+import logging
 from fastapi import HTTPException, status, UploadFile
 from db_models.profile import Profile
 from db_models.user import User
 from sqlalchemy.orm import Session
 from schemas.profile import ProfileUpdate
 import cloudinary.uploader
+
+logger = logging.getLogger(__name__)
 
 
 class ProfileService:
@@ -77,7 +80,35 @@ class ProfileService:
 
         except Exception as e:
             db.rollback()
+            logger.error("Avatar upload failed for user %s: %s", user.id, e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to upload avatar: {str(e)}",
+                detail="Avatar upload failed",
+            )
+
+    @staticmethod
+    def delete_avatar(db: Session, user: User) -> None:
+        profile = db.query(Profile).filter(Profile.user_id == user.id).first()
+
+        if not profile:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Profile not found"
+            )
+
+        if profile.avatar_url:
+            try:
+                cloudinary.uploader.destroy(f"chat_app/avatars/user_{user.id}")
+            except Exception as e:
+                logger.error("Cloudinary avatar delete failed for user %s: %s", user.id, e)
+
+        profile.avatar_url = None
+
+        try:
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.error("Avatar delete failed for user %s: %s", user.id, e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Avatar delete failed",
             )

@@ -4,11 +4,13 @@ from db_models import chat
 from routers import auth, profile, chat, users
 from core.database import engine, Base
 from core.config import get_settings
+from core.logging_config import setup_logging
 import core.cloudinary_config  # noqa: F401 — configures the cloudinary SDK on import
 from core.socket_manager import sio, sio_app
 from sockets import events  # Register events
 
 settings = get_settings()
+setup_logging()
 Base.metadata.create_all(bind=engine)
 
 
@@ -31,8 +33,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # Mount at /socket.io

@@ -92,7 +92,7 @@ def get_unread_count(
     return {"unread_count": count}
 
 
-@router.patch("/messages/{messsage_id}", response_model=MessageOut)
+@router.patch("/messages/{message_id}", response_model=MessageOut)
 def edit_message(
     message_id: UUID,
     message_data: Annotated[MessageUpdate, Body],
