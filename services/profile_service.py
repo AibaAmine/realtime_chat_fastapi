@@ -8,6 +8,27 @@ import cloudinary.uploader
 
 logger = logging.getLogger(__name__)
 
+MAX_AVATAR_SIZE = 5 * 1024 * 1024  # 5 MB
+
+# Magic-byte signatures for the image formats we accept — checked against the
+# actual file content, since the client-supplied content_type header can be spoofed.
+IMAGE_SIGNATURES = {
+    b"\xff\xd8\xff": "jpeg",
+    b"\x89PNG\r\n\x1a\n": "png",
+    b"GIF87a": "gif",
+    b"GIF89a": "gif",
+    b"RIFF": "webp",  # followed by "WEBP" at offset 8, checked separately
+}
+
+
+def _sniff_image_format(header: bytes) -> str | None:
+    for signature, fmt in IMAGE_SIGNATURES.items():
+        if header.startswith(signature):
+            if fmt == "webp" and header[8:12] != b"WEBP":
+                continue
+            return fmt
+    return None
+
 
 class ProfileService:
 
@@ -52,11 +73,21 @@ class ProfileService:
 
     @staticmethod
     def upload_avatar(db: Session, user: User, file: UploadFile) -> str:
-        # validate file type
-        if not file.content_type.startswith("image/"):
+        contents = file.file.read(MAX_AVATAR_SIZE + 1)
+
+        if len(contents) > MAX_AVATAR_SIZE:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="File must be an image"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"File too large, max {MAX_AVATAR_SIZE // (1024 * 1024)}MB",
             )
+
+        if _sniff_image_format(contents[:12]) is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File must be a valid JPEG, PNG, GIF, or WEBP image",
+            )
+
+        file.file.seek(0)
 
         profile = db.query(Profile).filter(Profile.user_id == user.id).first()
 
