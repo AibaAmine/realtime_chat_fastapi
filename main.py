@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from db_models import chat
 from routers import auth, profile, chat, users
-from core.database import engine, Base
 from core.config import get_settings
 from core.logging_config import setup_logging
 import core.cloudinary_config  # noqa: F401 — configures the cloudinary SDK on import
@@ -11,7 +10,6 @@ from sockets import events  # Register events
 
 settings = get_settings()
 setup_logging()
-Base.metadata.create_all(bind=engine)
 
 
 app = FastAPI(

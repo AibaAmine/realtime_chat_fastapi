@@ -1,6 +1,6 @@
-# Realtime Chat API
+# Realtime Chat App
 
-FastAPI backend for a real-time chat application. Features JWT auth with refresh token rotation, room-based persistent messaging, user profiles with Cloudinary avatars, Redis-backed presence, and Socket.IO for real-time events.
+A real-time chat application with JWT auth and refresh token rotation, room-based persistent messaging, user profiles with Cloudinary avatars, Redis-backed presence, and Socket.IO for real-time events.
 
 **Stack:** Python · FastAPI · PostgreSQL · SQLAlchemy · Socket.IO · Redis · Cloudinary · slowapi
 
@@ -124,6 +124,12 @@ Auth: `Authorization: Bearer <access_token>`
 | `POST` | `/profile/me/avatar` | Upload avatar to Cloudinary |
 | `DELETE` | `/profile/me/avatar` | Remove avatar |
 
+**Users**
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/users?q=` | Search users by username/email (min 2 chars), excludes self |
+
 **Chat — Rooms**
 
 | Method | Endpoint | Description |
@@ -163,10 +169,29 @@ CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
 REDIS_URL=redis://localhost:6379
 
+alembic upgrade head
 uvicorn main:app --reload
 ```
 
-DB tables are created automatically on first start.
+Schema is managed by Alembic — no more manual DB resets. New model changes: `alembic revision --autogenerate -m "..."` then `alembic upgrade head`.
+
+---
+
+## Frontend (local demo)
+
+React + Vite chat UI in `frontend/` — login/register, main chat (rooms, messages, typing, presence), group create/manage, profile page.
+
+```bash
+cd frontend
+npm install
+
+# .env
+VITE_API_URL=http://localhost:8000
+
+npm run dev
+```
+
+Runs on `http://localhost:5173`.
 
 ---
 

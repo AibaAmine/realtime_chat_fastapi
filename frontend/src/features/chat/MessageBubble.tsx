@@ -46,7 +46,7 @@ export function MessageBubble({ message, isOwn, onEdit, onDelete, onRetry }: Mes
         )}
 
         <div
-          className={`max-w-[60%] px-3 py-2 ${bubbleRadius} ${
+          className={`max-w-[420px] px-3 py-2 ${bubbleRadius} ${
             message.is_deleted ? "bg-bg-elevated" : bubbleTone
           } ${failed ? "opacity-60" : ""}`}
         >
